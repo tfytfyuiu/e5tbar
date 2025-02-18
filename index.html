@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>من يعرفني أكثر؟</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 20px;
+            background: url('https://www.raed.net/img?id=1228507') no-repeat center center fixed;
+            background-size: cover;
+            color: white;
+        }
+        .container {
+            max-width: 600px;
+            margin: auto;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 0px 10px rgba(255, 255, 255, 0.2);
+        }
+        .question {
+            margin: 15px 0;
+        }
+        .hidden {
+            display: none;
+        }
+        button {
+            margin-top: 10px;
+            padding: 10px;
+            cursor: pointer;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        input {
+            padding: 10px;
+            width: 90%;
+            margin-top: 5px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        #result {
+            font-size: 20px;
+            font-weight: bold;
+            color: #28a745;
+        }
+        .share-btn {
+            background-color: #25D366;
+        }
+        .share-btn:hover {
+            background-color: #1da851;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>من يعرفني أكثر؟</h2>
+        <div id="setup">
+            <p>أدخل اسمك:</p>
+            <input type="text" id="quizOwner" placeholder="اسم الشخص الذي يسأل" required>
+            <p>أدخل 5 أسئلة عن نفسك مع إجاباتك الصحيحة:</p>
+            <div id="questions"></div>
+            <button onclick="generateQuiz()">حفظ ومشاركة الاختبار</button>
+            <p id="quizLink" class="hidden"></p>
+        </div>
+        
+        <div id="quiz" class="hidden">
+            <h3>أجب على الأسئلة</h3>
+            <p>اسمك:</p>
+            <input type="text" id="quizTaker" placeholder="اسم الشخص الذي يجيب" required>
+            <div id="quizQuestions"></div>
+            <button onclick="checkAnswers()">إرسال</button>
+        </div>
+        
+        <div id="resultSection" class="hidden">
+            <h3>نتيجتك:</h3>
+            <p id="result"></p>
+            <button class="share-btn" onclick="shareQuiz()">📢 مشاركة الاختبار</button>
+            <button class="share-btn" onclick="shareResult()">📢 مشاركة النتيجة</button>
+        </div>
+    </div>
+
+    <script>
+        let questions = [];
+        
+        function generateForm() {
+            let questionsDiv = document.getElementById("questions");
+            for (let i = 1; i <= 5; i++) {
+                questionsDiv.innerHTML += `<div class='question'>
+                    <input type='text' id='q${i}' placeholder='السؤال ${i}' required>
+                    <input type='text' id='a${i}' placeholder='الإجابة الصحيحة' required>
+                </div>`;
+            }
+        }
+
+        function generateQuiz() {
+            let quizOwner = document.getElementById("quizOwner").value;
+            if (!quizOwner) {
+                alert("يرجى إدخال اسمك!");
+                return;
+            }
+            
+            let queryParams = new URLSearchParams();
+            queryParams.append("owner", quizOwner);
+            
+            for (let i = 1; i <= 5; i++) {
+                let q = document.getElementById(`q${i}`).value;
+                let a = document.getElementById(`a${i}`).value;
+                if (!q || !a) {
+                    alert("يرجى إدخال جميع الأسئلة والإجابات!");
+                    return;
+                }
+                questions.push({ question: q, answer: a });
+                queryParams.append(`q${i}`, q);
+                queryParams.append(`a${i}`, a);
+            }
+            let quizURL = "https://yourwebsite.com/quiz.html?" + queryParams.toString();
+            document.getElementById("quizLink").innerHTML = `<a href='${quizURL}' target='_blank'>🔗 اضغط هنا لمشاركة الاختبار</a>`;
+            document.getElementById("quizLink").classList.remove("hidden");
+        }
+
+        function loadSharedQuiz() {
+            const urlParams = new URLSearchParams(window.location.search);
+            let quizOwner = urlParams.get("owner");
+            if (quizOwner) {
+                document.getElementById("setup").classList.add("hidden");
+                document.getElementById("quiz").classList.remove("hidden");
+                let quizDiv = document.getElementById("quizQuestions");
+                for (let i = 1; i <= 5; i++) {
+                    let q = urlParams.get(`q${i}`);
+                    let a = urlParams.get(`a${i}`);
+                    if (q && a) {
+                        questions.push({ question: q, answer: a });
+                        quizDiv.innerHTML += `<div>
+                            <p>${q}</p>
+                            <input type='text' id='userA${questions.length - 1}' placeholder='إجابتك'>
+                        </div>`;
+                    }
+                }
+            }
+        }
+
+        function checkAnswers() {
+            let quizTaker = document.getElementById("quizTaker").value;
+            if (!quizTaker) {
+                alert("يرجى إدخال اسمك قبل الإجابة!");
+                return;
+            }
+            
+            let score = 0;
+            questions.forEach((q, index) => {
+                let userAnswer = document.getElementById(`userA${index}`).value;
+                if (userAnswer.toLowerCase().trim() === q.answer.toLowerCase().trim()) {
+                    score++;
+                }
+            });
+            document.getElementById("quiz").classList.add("hidden");
+            document.getElementById("resultSection").classList.remove("hidden");
+            document.getElementById("result").innerText = `${quizTaker} حصل على ${score} من 5 في اختبار ${decodeURIComponent(new URLSearchParams(window.location.search).get("owner"))}! 🎉`;
+        }
+
+        window.onload = function() {
+            generateForm();
+            loadSharedQuiz();
+        };
+    </script>
+</body>
+</html>
